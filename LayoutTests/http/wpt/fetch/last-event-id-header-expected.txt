@@ -1,0 +1,23 @@
+
+PASS Fetch preserves ASCII Last-Event-ID bytes
+PASS Native EventSource encodes ASCII Last-Event-ID as UTF-8
+PASS Fetch preserves Latin-1 Last-Event-ID bytes
+PASS Native EventSource encodes Latin-1 Last-Event-ID as UTF-8
+PASS Fetch preserves BMP Last-Event-ID bytes
+PASS Native EventSource encodes BMP Last-Event-ID as UTF-8
+PASS Fetch preserves astral Last-Event-ID bytes
+PASS Native EventSource encodes astral Last-Event-ID as UTF-8
+PASS Fetch preserves joined emoji Last-Event-ID bytes
+PASS Native EventSource encodes joined emoji Last-Event-ID as UTF-8
+PASS Fetch preserves ASCII Last-Event-ID bytes after a redirect
+PASS Native EventSource encodes ASCII Last-Event-ID as UTF-8 after a redirect
+PASS Fetch preserves Latin-1 Last-Event-ID bytes after a redirect
+PASS Native EventSource encodes Latin-1 Last-Event-ID as UTF-8 after a redirect
+PASS Fetch preserves BMP Last-Event-ID bytes after a redirect
+PASS Native EventSource encodes BMP Last-Event-ID as UTF-8 after a redirect
+PASS Fetch preserves astral Last-Event-ID bytes after a redirect
+PASS Native EventSource encodes astral Last-Event-ID as UTF-8 after a redirect
+PASS Fetch preserves joined emoji Last-Event-ID bytes after a redirect
+PASS Native EventSource encodes joined emoji Last-Event-ID as UTF-8 after a redirect
+PASS Fetch preserves non-UTF-8 Last-Event-ID bytes with a lowercase header name
+

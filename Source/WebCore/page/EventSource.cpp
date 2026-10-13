@@ -56,6 +56,7 @@
 #include <JavaScriptCore/ConsoleTypes.h>
 #include <wtf/SetForScope.h>
 #include <wtf/TZoneMallocInlines.h>
+#include <wtf/text/CString.h>
 #include <wtf/text/MakeString.h>
 #include <wtf/text/StringToIntegerConversion.h>
 
@@ -117,8 +118,14 @@ void EventSource::connect()
     request.setHTTPMethod("GET"_s);
     request.setHTTPHeaderField(HTTPHeaderName::Accept, "text/event-stream"_s);
     request.setHTTPHeaderField(HTTPHeaderName::CacheControl, "no-cache"_s);
-    if (!m_lastEventId.isEmpty())
+    if (!m_lastEventId.isEmpty()) {
+#if PLATFORM(COCOA)
+        // CFNetwork expects header bytes represented as Latin-1. Encode here so Fetch and redirected requests are not encoded again.
+        request.setHTTPHeaderField(HTTPHeaderName::LastEventID, String::fromLatin1(byteCast<char>(m_lastEventId.utf8().span())));
+#else
         request.setHTTPHeaderField(HTTPHeaderName::LastEventID, m_lastEventId);
+#endif
+    }
 
     RefPtr context = scriptExecutionContext();
 

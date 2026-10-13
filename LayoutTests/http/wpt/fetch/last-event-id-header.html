@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Last-Event-ID header encoding</title>
+<link rel="help" href="https://fetch.spec.whatwg.org/#headers-class">
+<link rel="help" href="https://html.spec.whatwg.org/multipage/server-sent-events.html#processing-model">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script>
+const eventIds = [
+    {name: "ASCII", id: "id-1", bytes: "id-1", hex: "69642d31"},
+    {name: "Latin-1", id: "café", bytes: "caf\xc3\xa9", hex: "636166c3a9"},
+    {name: "BMP", id: "€", bytes: "\xe2\x82\xac", hex: "e282ac"},
+    {name: "astral", id: "😀", bytes: "\xf0\x9f\x98\x80", hex: "f09f9880"},
+    {name: "joined emoji", id: "👩🏽‍💻", bytes: "\xf0\x9f\x91\xa9\xf0\x9f\x8f\xbd\xe2\x80\x8d\xf0\x9f\x92\xbb", hex: "f09f91a9f09f8fbde2808df09f92bb"},
+];
+
+function requestURL(id, redirect)
+{
+    const url = new URL("resources/last-event-id.py", location.href);
+    if (id !== undefined)
+        url.searchParams.set("id", id);
+    return redirect ? "/common/redirect.py?location=" + encodeURIComponent(url.href) : url.href;
+}
+
+for (const redirect of [false, true]) {
+    const suffix = redirect ? " after a redirect" : "";
+    for (const {name, id, bytes, hex} of eventIds) {
+        promise_test(async () => {
+            const response = await fetch(requestURL(undefined, redirect), {
+                headers: {"Last-Event-ID": bytes, "X-Test": bytes},
+            });
+            const headers = await response.json();
+            assert_equals(headers.control, hex, "Control header bytes");
+            assert_equals(headers.lastEventId, hex, "Last-Event-ID bytes");
+        }, "Fetch preserves " + name + " Last-Event-ID bytes" + suffix);
+
+        async_test(test => {
+            const source = new EventSource(requestURL(id, redirect));
+            test.add_cleanup(() => source.close());
+            let receivedInitialEvent = false;
+            source.addEventListener("message", test.step_func(event => {
+                assert_false(receivedInitialEvent, "Reconnect must send Last-Event-ID");
+                receivedInitialEvent = true;
+                assert_equals(event.data, "initial");
+                assert_equals(event.lastEventId, id, "Original event ID");
+            }));
+            source.addEventListener("reconnected", test.step_func_done(event => {
+                assert_equals(event.lastEventId, id, "Event ID after reconnect");
+                assert_equals(event.data, hex, "UTF-8 Last-Event-ID bytes");
+            }));
+        }, "Native EventSource encodes " + name + " Last-Event-ID as UTF-8" + suffix);
+    }
+}
+
+promise_test(async () => {
+    const response = await fetch(requestURL(), {
+        headers: {"last-event-id": "\xe9", "X-Test": "\xe9"},
+    });
+    const headers = await response.json();
+    assert_equals(headers.control, "e9", "Control header bytes");
+    assert_equals(headers.lastEventId, "e9", "Last-Event-ID bytes");
+}, "Fetch preserves non-UTF-8 Last-Event-ID bytes with a lowercase header name");
+</script>

@@ -1,0 +1,3 @@
+
+PASS Native EventSource preserves Unicode IDs when a service worker forwards the reconnect with fetch
+

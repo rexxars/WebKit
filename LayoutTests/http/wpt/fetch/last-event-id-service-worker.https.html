@@ -1,0 +1,33 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Last-Event-ID encoding through a service worker</title>
+<link rel="help" href="https://html.spec.whatwg.org/multipage/server-sent-events.html#processing-model">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/service-workers/service-worker/resources/test-helpers.sub.js"></script>
+<script>
+promise_test(async test => {
+    const registration = await service_worker_unregister_and_register(test, "resources/last-event-id-worker.js", "resources/");
+    test.add_cleanup(() => registration.unregister());
+    await wait_for_state(test, registration.installing, "activated");
+
+    const frame = await with_iframe("resources/last-event-id.py?frame");
+    test.add_cleanup(() => frame.remove());
+    assert_not_equals(frame.contentWindow.navigator.serviceWorker.controller, null, "Frame is controlled");
+
+    const id = "café-👩🏽‍💻";
+    const source = new frame.contentWindow.EventSource(new URL("resources/last-event-id.py?id=" + encodeURIComponent(id), location.href));
+    test.add_cleanup(() => source.close());
+    const event = await new Promise((resolve, reject) => {
+        let receivedInitialEvent = false;
+        source.addEventListener("message", () => {
+            if (receivedInitialEvent)
+                reject(new Error("Reconnect omitted the Last-Event-ID header"));
+            receivedInitialEvent = true;
+        });
+        source.addEventListener("reconnected", resolve, {once: true});
+    });
+    assert_equals(event.lastEventId, id, "Original event ID");
+    assert_equals(event.data, "636166c3a92df09f91a9f09f8fbde2808df09f92bb", "UTF-8 Last-Event-ID bytes");
+}, "Native EventSource preserves Unicode IDs when a service worker forwards the reconnect with fetch");
+</script>
